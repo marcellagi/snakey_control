@@ -13,75 +13,72 @@ class MinimalPublisher(Node):
         self.publisher_ = self.create_publisher(SetPosition, '/set_position', 10) 
         timer_period = param_1  # período do temporizador em segundos
         self.sig = param_2  # sinal de entrada que será enviado aos atuadores
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.subscriptions = self.create_subscription( Joy, '/joy', self.callback, 10)
+        self.timer = self.create_timer(timer_period, self.pub_callback)
+        self.subscription = self.create_subscription( Joy, '/joy', self.sub_callback, 10)
         self.i = 0
-        self.motors = [SetPosition() for _ in range(6)] # inicializa a mensagem com 6 motores
+        self.motors = [SetPosition() for _ in range(1, 7)] # inicializa a mensagem com 6 motores
         self.limite = 3000
         self.msg = SetPosition() #cria uma mensagem do tipo SetPosition
-        for i in range(1, 7):   
-          self.motors[i].id = [i]
-          self.motors[i].position = SetPosition() # posição do motor 1
-        
 
-    def timer_callback(self): #retorno do temporizador, executado a cada intervalo de tempo
+    def pub_callback(self):
+       self.get_logger().info('pub')  
+      #  self.publisher_.publish(self.msg)      
 
-        if self.i <= 30:
-            for j in range(self.sig.shape[0]):  # menor que 30 segundos todos os motores em 10
-                self.msg.id.append(j+1)
-                self.msg.position.append(10)
-        else:
-            for j in range(self.sig.shape[0]):  # maior que 30 segundos todos os motores na posição do sinal 
-                self.msg.id.append(j+1)
-                self.msg.position.append(self.sig[j][self.i-31]+10)
-                self.get_logger().info('Motor %d: %s' %
-                                       (j+1, self.sig[j][self.i-31]))
-        self.i += 1 #incrementa o contador de tempo 
-        if (self.i >= self.sig.shape[1]+10): #se o contador de tempo for maior que o tamanho do sinal, reinicia o contador
-            self.i = 0
-        self.publisher_.publish(self.msg)
-        # self.get_logger().info(msg)
-
-    def callback(self, data):
-
+    def sub_callback(self, data): #retorno do temporizador, executado a cada intervalo de tempo
         A, B, C, D, E = data.axes[0], data.axes[1], data.axes[3], data.axes[4], data.buttons[0]
 
         if E:
             if A > 0:
             # ligar motor que vai para esq
-                self.motors[2] += 10 * A if self.motors[2] < self.limite else 0.0
-                self.motors[6] += 10 * A if self.motors[6] < self.limite else 0.0
+                self.motors[2].position += 10 * A if self.motors[2].position < self.limite else 0
+                self.motors[6].position += 10 * A if self.motors[6].position < self.limite else 0
                 
             elif A < 0:
             # ligar motor que vai para dir
-                self.motors[2] -= 10 * A if self.motors[2] < self.limite else 0.0
-                self.motors[4] += 10 * A if self.motors[4] < self.limite else 0.0
+                self.motors[2].position -= 10 * A if self.motors[2].position < self.limite else None
+                self.motors[4].position += 10 * A if self.motors[4].position < self.limite else None
         
             if B > 0:
             # ligar motor que vai para frente
-                self.motors[2] += 10 * B if self.motors[2] < self.limite else 0.0
+                self.motors[2].position += 10 * B if self.motors[2].position < self.limite else None
             elif B < 0:
             # ligar motor que vai para trás
-                self.motors[2] -= 10 * B if self.motors[2] < self.limite else 0.0
+                self.motors[2].position -= 10 * B if self.motors[2].position < self.limite else None
             if C > 0:
             # ligar motor que vai para esq
-                self.motors[3] += 10 * B if self.motors[3] < self.limite else 0.0
-                self.motors[5] += 10 * B if self.motors[5] < self.limite else 0.0
+                self.motors[3].position += 10 * B if self.motors[3].position < self.limite else None
+                self.motors[5].position += 10 * B if self.motors[5].position < self.limite else None
             elif C < 0:
             # ligar motor que vai para dir
-                self.motors[3] -= 10 * B if self.motors[3] < self.limite else 0.0
-                self.motors[5] -= 10 * B if self.motors[5] < self.limite else 0.0
+                self.motors[3].position -= 10 * B if self.motors[3].position < self.limite else None
+                self.motors[5].position -= 10 * B if self.motors[5].position < self.limite else None
             if D > 0:
             # ligar motor que vai para esq
-                self.motors[1] -= 10 * B if self.motors[1] < self.limite else 0.0
+                self.motors[1].position -= 10 * B if self.motors[1].position < self.limite else None
             elif D < 0:
             # ligar motor que vai para dir
-                self.motors[1] -= 10 * B if self.motors[1] < self.limite else 0.0
+                self.motors[1].position -= 10 * B if self.motors[1].position < self.limite else None
             # formatacao dos dados
-            for i in range(1, 7):   
-              self.publisher_.publish(self.motors[i])
+            for j in range(self.sig.shape[0]):  # menor que 30 segundos todos os motores em 10
+                  self.msg.id.append(j+1)
+                  self.msg.position.append(self.motors[j+1].position)
         else:
-            self.publisher_.publish(self.msg)
+          if self.i <= 30:
+              for j in range(self.sig.shape[0]):  # menor que 30 segundos todos os motores em 10
+                  self.msg.id.append(j+1)
+                  self.msg.position.append(10)
+          else:
+              for j in range(self.sig.shape[0]):  # maior que 30 segundos todos os motores na posição do sinal 
+                  self.msg.id.append(j+1)
+                  self.msg.position.append(self.sig[j][self.i-31]+10)
+                  self.get_logger().info('Motor %d: %s' %
+                                         (j+1, self.sig[j][self.i-31]))
+          self.i += 1 #incrementa o contador de tempo 
+          if (self.i >= self.sig.shape[1]+10): #se o contador de tempo for maior que o tamanho do sinal, reinicia o contador
+              self.i = 0
+        print(self.msg) 
+        
+       
 
 def APRBS(a_range, b_range, nstep): #gera um sinal de entrada aleatório que será usado como entrada 
     #define a faixa de amplitude do sinal
