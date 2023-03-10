@@ -27,8 +27,7 @@ class MinimalPublisher(Node):
         self.zero_p =[0 for _ in range(6)]
         for i in range(6):
           self.zero_p[i] = self.zero_position(i+1)
-    
-    
+        
     def zero_position(self, id):
 
       timeout_sec = 10.0
@@ -76,74 +75,70 @@ class MinimalPublisher(Node):
         self.controller.right_H = float(data.axes[3])
         self.controller.right_V = float(data.axes[4])
         self.controller.bt_RB = data.buttons[5]
-        # cast a Any type to int
-        # self.joyA = int(data.data)
+        self.controller.bt_start = data.buttons[7]
+    
+    def map_range(self, inp, in_min, in_max, out_min, out_max):
+      out = (inp - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+      if out > out_max:
+        out = out_max
+      elif out < out_min:   
+        out = out_min         
+      return out
 
     def controller_manager(self):
         if self.controller:
             controller = self.controller
             self.step = 100.0
-            print("joy")
-            if controller.left_H > 0.35:
-            # ligar motor que vai para esq
-              print("leftH+")
-              self.motors[1] += self.step * controller.left_H #if self.motors[1] in self.limite else None
-              self.motors[5] += self.step * controller.left_H #if self.motors[5] in self.limite else None
-                
-            elif controller.left_H < -0.35:
-            # ligar motor que vai para dir
-              print("leftH-")
-              self.motors[1] += self.step * controller.left_H #if self.motors[1] in self.limite else None
-              self.motors[5] += self.step * controller.left_H #if self.motors[3] in self.limite else None
-            else:
-              self.motors[0] = 0
-              self.motors[1] = 0
-              self.motors[2] = 0
-              self.motors[3] = 0
-              self.motors[4] = 0
-              self.motors[5] = 0
-              print("parou")
-            
-            if controller.left_V > 0.35:
-            # ligar motor que vai para frente
-                print("leftV+")
-                self.motors[2] += self.step * controller.left_V #if self.motors[2] in self.limite else None
-                self.motors[4] += self.step * controller.left_V #if self.motors[5] in self.limite else None
-            elif controller.left_V < -0.35:
-            # ligar motor que vai para trás
-                print("leftH-")
-                self.motors[2] += self.step * controller.left_V #if self.motors[2] in self.limite else None
-                self.motors[4] += self.step * controller.left_V #if self.motors[5] in self.limite else None
-            else:
-              self.motors[2] = 0
-              self.motors[4] = 0
-              print("parou")
 
-            # if C > 0:
-            # # ligar motor que vai para esq
-            #     self.motors[3].position += 10 * B if self.motors[3].position < self.limite else None
-            #     self.motors[5].position += 10 * B if self.motors[5].position < self.limite else None
-            # elif C < 0:
-            # # ligar motor que vai para dir
-            #     self.motors[3].position -= 10 * B if self.motors[3].position < self.limite else None
-            #     self.motors[5].position -= 10 * B if self.motors[5].position < self.limite else None
-            # if D > 0:
-            # # ligar motor que vai para esq
-            #     self.motors[1].position -= 10 * B if self.motors[1].position < self.limite else None
-            # elif D < 0:
-            # # ligar motor que vai para dir
-            #     self.motors[1].position -= 10 * B if self.motors[1].position < self.limite else None
+            i1 = 0.625*controller.left_H + 0.353553*controller.left_V
+            i2 = 0.625*controller.left_H + 0.625*controller.left_V
+            i3 = 0.625*controller.left_H + 0.353553*controller.left_V
             
-            # formatacao dos dados
-            # for j in range(self.sig.shape[0]):  # menor que 30 segundos todos os motores em 10
-            #       self.msg.id.append(j+1)
-            #       self.msg.position.append(int(self.motors[j]))
-            #       print(int(self.motors[j]))
-            # return self.msg
-            #self.publisher_.publish(self.motors[j])    
-        # else:
-          # print("aleatorio") 
-          # self.joyA = E
+            i4 = controller.right_H - 0.3333*controller.right_V
+            i5 = -controller.right_H - 0.3333*controller.right_V
+            i6 = 0.6667*controller.right_V
+           
+            self.motors[0] = self.map_range(i1, 0, 1, 0, 2500) 
+            self.motors[1] = self.map_range(i2, 0, 1, 0, 2500)
+            self.motors[2] = self.map_range(i3, 0, 1, 0, 2500)
+            self.motors[3] = self.map_range(i4, 0, 1, 0, 2500)
+            self.motors[4] = self.map_range(i5, 0, 1, 0, 2500)
+            self.motors[5] = self.map_range(i6, 0, 1, 0, 2500)
+
+            # if controller.left_H > 0.1:
+            #   self.motors[1] = self.map_range(i2, 0.3, 1, 0, 2500)
+            #   self.motors[2] = self.map_range(i3, 0.3, 1, 0, 2500)
+           
+                
+            # elif controller.left_H < 0.1:
+            #   self.motors[0] = self.map_range(i1, 0.3, 1, 0, 2500) 
+            #   self.motors[1] = self.map_range(i2, 0.3, 1, 0, 2500)
+             
+            
+            # if controller.left_V > 0.1:
+            #   self.motors[0] = self.map_range(i1, 0.3, 1, 0, 2500)
+            #   self.motors[2] = self.map_range(i3, 0.3, 1, 0, 2500)
+              
+            
+            # elif controller.left_V < 0.1:
+            #   self.motors[2] = self.map_range(i3, 0.3, 1, 0, 2500)
+
+            # if controller.right_H > 0.1:
+            #   self.motors[4] = self.map_range(i5, 0.3, 1, 0, 2500)
+            #   self.motors[5] = self.map_range(i6, 0.3, 1, 0, 2500)
+
+            # elif controller.right_H < 0.1:
+            #   self.motors[3] = self.map_range(i4, 0.3, 1, 0, 2500)
+            #   self.motors[5] = self.map_range(i6, 0.3, 1, 0, 2500)
+
+            # if controller.right_V > 0.1:
+            #   self.motors[5] = self.map_range(i6, 0.3, 1, 0, 2500)
+
+            # elif controller.right_V < 0.1:
+            #   self.motors[3] = self.map_range(i4, 0.3, 1, 0, 2500)
+            #   self.motors[4] = self.map_range(i5, 0.3, 1, 0, 2500)
+
+            
 
 def APRBS(a_range, b_range, nstep): #gera um sinal de entrada aleatório que será usado como entrada      
     #define a faixa de amplitude do sinal
@@ -194,7 +189,7 @@ def multiple_aprbs(a_range, b_range, nstep, ninput, type='float', factor=1.0):
 
 def main(args=None):
     rclpy.init(args=args)
-    node_time = 0.5
+    node_time = 0.25
     ninput = 6
     nstep = 3600
     a_range = [0, 2.0]  # the motor range are 0 to 4000 - factor = 1000
